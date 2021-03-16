@@ -1,0 +1,8 @@
+# elm
+elm-stuff
+
+# node modules
+node_modules
+
+# generated js
+dist/main.js
