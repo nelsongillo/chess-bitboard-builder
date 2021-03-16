@@ -34,6 +34,7 @@ main =
         }
 
 
+-- init Model
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( UInt64.zero
@@ -90,7 +91,6 @@ board model size =
                     (size / 8)
                     (SquarePressed s)
             )
-            -- Square.all
             <| List.range 0 63
         )
 
@@ -148,13 +148,10 @@ squarePressed sq model =
 -- get Coordinates from square
 squareToCoordinates : Square -> ( Int, Int )
 squareToCoordinates sq =
---    ( square_ |> Square.file |> File.toIndex
---    , 7 - (square_ |> Square.rank |> Rank.toIndex)
---    )
-
     let file = remainderBy 8 sq
         rank = 7 - (sq // 8)
     in (file, rank )
 
+-- set bit for square
 sqMask : Square -> UInt64.UInt64
 sqMask sq = UInt64.shiftLeftBy sq UInt64.one 
