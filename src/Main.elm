@@ -7,6 +7,7 @@ import Html.Styled.Attributes exposing (css)
 import Html.Styled.Events exposing (onClick)
 import UInt64
 import UInt64.Digits as Digits
+import Css
 
 
 -----------------------------------------------------------------------------------------------------------------------
@@ -18,6 +19,7 @@ type alias Square = Int
 
 type Msg
     = SquarePressed Square
+    | Invert
     | Reset
 
 
@@ -50,6 +52,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SquarePressed sq -> squarePressed sq model
+        Invert -> (UInt64.complement model, Cmd.none)
         Reset -> init ()
 
 
@@ -61,7 +64,9 @@ view : Model -> Html Msg
 view model =
     div [ css [Css.textAlign Css.center ]]
         [ p [] [board model 400.0]
-        , p [] [ button [ onClick Reset ] [ text "Reset" ]]
+        , p []  [ button [ onClick Reset ] [ text "Reset" ]
+                , button [ onClick Invert ] [ text "Invert" ]
+                ]
         , p [] [ text ("0x" ++ UInt64.toHexString model)  ]
         , p [] [
             text (model
@@ -119,15 +124,16 @@ square ( col, row ) set sqSize msg =
         [ if set 
                 then div
                     [ css
-                        [ Css.position Css.absolute
-                        , Css.width (Css.px size)
-                        , Css.height (Css.px size)
+                        [ Css.width  <| Css.px size
+                        , Css.height <| Css.px size
                         , Css.backgroundColor (Css.rgb 255 0 0)
                         , Css.borderRadius (Css.pct 50)
                         ]
                     ]
+                    [ text <| squareToString (col, row) ]
+                else div
                     []
-                else text ""
+                    [ text <| squareToString (col, row) ]
         ]
 
 
@@ -151,6 +157,20 @@ squareToCoordinates sq =
     let file = remainderBy 8 sq
         rank = 7 - (sq // 8)
     in (file, rank )
+
+squareToString : ( Int, Int ) -> String
+squareToString (file, rank) =
+    let f_name = case file of
+            0 -> "A"
+            1 -> "B"
+            2 -> "C"
+            3 -> "D"
+            4 -> "E"
+            5 -> "F"
+            6 -> "G"
+            7 -> "H"
+            _ -> "NA"
+    in String.append f_name <| String.fromInt <| 8 - rank
 
 -- set bit for square
 sqMask : Square -> UInt64.UInt64
