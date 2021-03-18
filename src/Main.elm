@@ -2,9 +2,9 @@ module Main exposing (..)
 
 import Browser
 import Css
-import Html.Styled exposing (Html, button, div, p, text, toUnstyled)
-import Html.Styled.Attributes exposing (css)
-import Html.Styled.Events exposing (onClick)
+import Html.Styled exposing (Html, button, div, input, p, text, toUnstyled)
+import Html.Styled.Attributes exposing (..)
+import Html.Styled.Events exposing (onClick, onInput)
 import UInt64
 import UInt64.Digits as Digits
 import Css
@@ -13,12 +13,19 @@ import Css
 -----------------------------------------------------------------------------------------------------------------------
 --  Types
 -----------------------------------------------------------------------------------------------------------------------
-type alias Model = UInt64.UInt64
+type alias Model = 
+    { bitboard: UInt64.UInt64
+    , content: String
+    , error: Bool
+    , errorVal: String
+    }
 
 type alias Square = Int
 
 type Msg
     = SquarePressed Square
+    | ChangeInput String
+    | Load
     | Invert
     | Reset
 
@@ -39,7 +46,11 @@ main =
 -- init Model
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( UInt64.zero
+    ( { bitboard = UInt64.zero
+      , content = ""
+      , error = False
+      , errorVal = ""
+      }
     , Cmd.none
     )
 
@@ -52,8 +63,38 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SquarePressed sq -> squarePressed sq model
-        Invert -> (UInt64.complement model, Cmd.none)
-        Reset -> init ()
+        ChangeInput input ->
+            ( { model 
+              | content = input
+              }
+            , Cmd.none
+            )
+        Load -> let updated = case UInt64.fromString model.content of
+                        Just value ->
+                            { model
+                            | bitboard = value
+                            , error = False
+                            , errorVal = ""
+                            , content = "" 
+                            }
+                        Nothing ->
+                            { model
+                            | error = True
+                            , errorVal = model.content
+                            }
+                in ( updated, Cmd.none )
+        Invert ->
+            ( { model 
+              | bitboard =  UInt64.complement model.bitboard
+              }
+            , Cmd.none
+            )
+        Reset ->
+            ( { model 
+              | bitboard =  UInt64.zero
+              }
+            , Cmd.none
+            )
 
 
 -----------------------------------------------------------------------------------------------------------------------
@@ -62,18 +103,29 @@ update msg model =
 -- view
 view : Model -> Html Msg
 view model =
+    let errorMsg = if model.error
+            then p 
+                [css [Css.color <| Css.rgb 255 0 0]]
+                [ text <| String.append model.errorVal " is not a valid unsigned 64bit value" ]
+            else p [] []
+    in
     div [ css [Css.textAlign Css.center ]]
         [ p [] [board model 400.0]
-        , p []  [ button [ onClick Reset ] [ text "Reset" ]
-                , button [ onClick Invert ] [ text "Invert" ]
-                ]
-        , p [] [ text ("0x" ++ UInt64.toHexString model)  ]
+        , p [] [ text ("0x" ++ UInt64.toHexString model.bitboard)  ]
         , p [] [
-            text (model
+            text (model.bitboard
                     |> UInt64.toDigits Digits.binary
                     |> Digits.pad 64 '0'
                     |> Digits.groupToString 4 ' ')
             ]
+        , errorMsg
+        , p []  [ input [ placeholder "bitboard value", value model.content, onInput ChangeInput ] []
+                , button [ onClick Load ] [ text "Load" ]
+                ]
+
+        , p []  [ button [ onClick Reset ] [ text "Reset" ]
+                , button [ onClick Invert ] [ text "Invert" ]
+                ]
         ]
 
 -- Draw Board
@@ -92,7 +144,7 @@ board model size =
             (\s ->
                 square
                     (squareToCoordinates s)
-                    (UInt64.and (sqMask s) model |> UInt64.isZero |> not)
+                    (UInt64.and (sqMask s) model.bitboard |> UInt64.isZero |> not)
                     (size / 8)
                     (SquarePressed s)
             )
@@ -143,7 +195,7 @@ square ( col, row ) set sqSize msg =
 -- Square Pressed, update Board
 squarePressed : Square -> Model -> ( Model, Cmd Msg )
 squarePressed sq model =
-    ( UInt64.xor (sqMask sq) model
+    ( {model | bitboard = UInt64.xor (sqMask sq) model.bitboard }
     , Cmd.none
     )
 
