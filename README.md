@@ -16,4 +16,4 @@ If you want to run the dev server run
 npm run dev
 ```
 
-[Check it out](https://einzigartigername.github.io/chess-bitboard-builder/)
+[Check it out](https://nelsongillo.github.io/chess-bitboard-builder/)
